@@ -1,33 +1,67 @@
 package com.example.microservicio_envios.service;
 
+import com.example.microservicio_envios.exception.EnvioNotFoundException;
 import com.example.microservicio_envios.model.Envio;
-import org.springframework.stereotype.Service;
-import java.util.*;
+import com.example.microservicio_envios.repository.EnvioRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Slf4j
 @Service
 public class EnvioService {
-    private List<Envio> envios = new ArrayList<>(List.of(
-        new Envio(1, "JDE643", "Claudio Pérez", "En tránsito", "Lima, Perú"),
-        new Envio(2, "JDE782", "Josefa López", "Entregado", "Madrid, España"),
-        new Envio(3, "JDE823", "Carlos Gómez", "En tránsito", "Cordoba, Argentina")
-    ));
+
+    @Autowired
+    private EnvioRepository repository;
 
     public List<Envio> obtenerTodos() {
-        return envios;
+        log.debug("Servicio: obtenerTodos()");
+        return repository.findAll(Sort.by("id").ascending());
     }
 
-    public Envio obtenerPorId(int id) {
-        return envios.stream()
-            .filter(e -> e.getId() == id)
-            .findFirst()
-            .orElse(null);
+    public Envio obtenerPorId(Long id) {
+        log.debug("Servicio: obtenerPorId({})", id);
+        return repository.findById(id)
+                .orElseThrow(() -> new EnvioNotFoundException(id));
     }
 
-    public String obtenerUbicacionPorId(int id) {
-        return envios.stream()
-            .filter(e -> e.getId() == id)
-            .map(Envio::getUbicacion)
-            .findFirst()
-            .orElse("Envio no encontrado");
+    public Envio guardar(Envio envio) {
+        log.debug("Servicio: guardar({})", envio.getNumeroEnvio());
+
+        if (repository.existsById(envio.getId())) {
+            log.error("Ya existe un envío con ID {}", envio.getId());
+            throw new IllegalArgumentException("Ya existe un envío con ID " + envio.getId());
+        }
+
+        return repository.save(envio);
+    }
+
+    public Envio actualizar(Long id, Envio datosActualizados) {
+        log.debug("Servicio: actualizar({}, {})", id, datosActualizados.getNumeroEnvio());
+
+        Envio existente = repository.findById(id)
+                .orElseThrow(() -> new EnvioNotFoundException(id));
+
+        existente.setNumeroEnvio(datosActualizados.getNumeroEnvio());
+        existente.setDestinatario(datosActualizados.getDestinatario());
+        existente.setEstado(datosActualizados.getEstado());
+        existente.setUbicacion(datosActualizados.getUbicacion());
+
+        return repository.save(existente);
+    }
+
+    public void eliminar(Long id) {
+        log.debug("Servicio: eliminar({})", id);
+
+        Envio existente = repository.findById(id)
+                .orElseThrow(() -> new EnvioNotFoundException(id));
+
+        repository.delete(existente);
     }
 }
+
