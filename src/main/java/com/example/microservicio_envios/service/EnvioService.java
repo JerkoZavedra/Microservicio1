@@ -16,8 +16,12 @@ import java.util.List;
 @Service
 public class EnvioService {
 
-    @Autowired
-    private EnvioRepository repository;
+    private final EnvioRepository repository;
+
+    // ✅ Constructor explícito para usar en tests o inyección manual
+    public EnvioService(EnvioRepository repository) {
+        this.repository = repository;
+    }
 
     public List<Envio> obtenerTodos() {
         log.debug("Servicio: obtenerTodos()");
@@ -64,4 +68,5 @@ public class EnvioService {
         repository.delete(existente);
     }
 }
+
 
